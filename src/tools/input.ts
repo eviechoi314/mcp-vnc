@@ -1,7 +1,7 @@
 // src/tools/input.ts
 import { VncClient } from '@computernewb/nodejs-rfb';
 import { VncConnectionManager } from '../vnc/client.js';
-import { parseKeyInput, getKeysym, charNeedsShift, getUnshiftedChar } from '../vnc/keyboard.js';
+import { parseKeyInput, getKeysym, charNeedsShift } from '../vnc/keyboard.js';
 
 export async function handleClick(
   vncManager: VncConnectionManager, 
@@ -173,36 +173,30 @@ async function typeString(client: any, text: string) {
 }
 
 async function typeCharacter(
-  vncClient: VncClient, 
-  char: string, 
-  keyHoldTime: number, 
+  vncClient: VncClient,
+  char: string,
+  keyHoldTime: number,
   betweenKeyDelay: number
 ) {
-  // Check if this is a character that needs shift
+  // Send the character's own keysym directly (e.g. 'ampersand', not 'seven'
+  // plus a manually-held Shift). RFB key events carry a resolved keysym, and
+  // the server (Xvnc/tigervnc) is responsible for synthesizing whatever
+  // keycode+modifier combo produces it — exactly what a real client like
+  // Remmina relies on. Manually toggling a separate Shift keysym around the
+  // *unshifted* keysym doesn't reliably combine on the server side, which
+  // was producing bare unshifted characters ('&' -> '7', '~' -> '`', etc.)
+  // for every shifted symbol. See handleKeyPress, which never had this
+  // problem because it always sent the real target keysym.
+  const keysym = getKeysym(char);
   const needsShift = charNeedsShift(char);
-  const keysym = getKeysym(needsShift ? getUnshiftedChar(char) : char);
-  const shiftKeysym = getKeysym('Shift');
-  
-  console.error(`Typing '${char}' with keysym 0x${keysym.toString(16)}${needsShift ? ' (with Shift)' : ''}`);
-  
+
+  console.error(`Typing '${char}' with keysym 0x${keysym.toString(16)}${needsShift ? ' (shifted)' : ''}`);
+
   try {
-    // Press Shift if needed
-    if (needsShift) {
-      vncClient.sendKeyEvent(shiftKeysym, true);
-      await new Promise(resolve => setTimeout(resolve, 10));
-    }
-    
-    // Press and release the key
     vncClient.sendKeyEvent(keysym, true);
     await new Promise(resolve => setTimeout(resolve, keyHoldTime));
     vncClient.sendKeyEvent(keysym, false);
-    
-    // Release Shift if it was pressed
-    if (needsShift) {
-      await new Promise(resolve => setTimeout(resolve, 10));
-      vncClient.sendKeyEvent(shiftKeysym, false);
-    }
-    
+
     await new Promise(resolve => setTimeout(resolve, betweenKeyDelay));
   } catch (error) {
     console.error(`VNC library error typing character '${char}':`, error);
