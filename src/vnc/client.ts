@@ -24,10 +24,18 @@ export class VncConnectionManager {
     return new Promise((resolve, reject) => {
       const vncClient = new VncClient({
         debug: false,
+        // Raw + copyRect only, no hextile/zrle. TigerVNC's EncodeManager will
+        // still choose whichever offered encoding it estimates is "best" per
+        // rectangle regardless of our preference order, and for photographic/
+        // video content it happily picks Hextile's CPU-heavy per-rect analysis
+        // (Indexed RLE / Full Colour sub-encoding) over cheap Raw - that CPU
+        // cost, not network transfer, was what pushed full-frame requests past
+        // the connection timeout. With Hextile not offered at all the server
+        // has nothing to fall back to but Raw, which is just a memcpy of the
+        // framebuffer - a full 1440x900x4B frame is ~5MB, trivial over LAN.
         encodings: [
-          VncClient.consts.encodings.raw, // Try raw encoding first for problematic servers
-          VncClient.consts.encodings.copyRect,
-          VncClient.consts.encodings.hextile
+          VncClient.consts.encodings.raw,
+          VncClient.consts.encodings.copyRect
           // Removed zrle as it seems to cause "Invalid subencoding" errors on some servers
         ]
       });
