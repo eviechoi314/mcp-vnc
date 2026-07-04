@@ -33,6 +33,26 @@ export class VncConnectionManager {
       });
 
       let hasReceivedInitialFramebuffer = false;
+      // Once settled (resolved or rejected), any further error/timeout must not
+      // reject again - but on the failure paths it must still disconnect this
+      // vncClient. Previously, timeout/error only rejected the Promise, leaving
+      // this object (and its live TCP socket) orphaned with nothing left holding
+      // a reference to close it - the socket just stayed ESTABLISHED on the
+      // server until it eventually piled up enough to make every subsequent
+      // connection attempt start timing out too.
+      let settled = false;
+
+      const failAndCleanup = (err: Error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeoutHandle);
+        try {
+          vncClient.disconnect();
+        } catch (disconnectError) {
+          console.error('Error disconnecting failed VNC client:', disconnectError);
+        }
+        reject(err);
+      };
 
       vncClient.on('connected', () => {
         console.error(`Connected to VNC server at ${this.config.host}:${this.config.port}`);
@@ -42,14 +62,16 @@ export class VncConnectionManager {
         const screenWidth = vncClient.clientWidth || 0;
         const screenHeight = vncClient.clientHeight || 0;
         console.error(`VNC authenticated, screen: ${screenWidth}x${screenHeight}`);
-        
+
         // Request the initial full framebuffer
         vncClient.requestFrameUpdate(false, 0, 0, screenWidth, screenHeight);
       });
 
       vncClient.on('frameUpdated', () => {
-        if (!hasReceivedInitialFramebuffer) {
+        if (!hasReceivedInitialFramebuffer && !settled) {
           hasReceivedInitialFramebuffer = true;
+          settled = true;
+          clearTimeout(timeoutHandle);
           console.error('Received initial framebuffer, connection ready');
           resolve(vncClient);
         }
@@ -57,7 +79,7 @@ export class VncConnectionManager {
 
       vncClient.on('error', (error) => {
         console.error(`VNC connection error: ${error.message}`);
-        reject(new Error(`VNC connection error: ${error.message}`));
+        failAndCleanup(new Error(`VNC connection error: ${error.message}`));
       });
 
       // Handle VNC disconnections
@@ -74,8 +96,8 @@ export class VncConnectionManager {
 
       vncClient.connect(connectionOptions);
 
-      setTimeout(() => {
-        reject(new Error('VNC connection timeout'));
+      const timeoutHandle = setTimeout(() => {
+        failAndCleanup(new Error('VNC connection timeout'));
       }, 15000); // Increased timeout to wait for initial frame
     });
   }
