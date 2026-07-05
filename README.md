@@ -85,10 +85,10 @@ Please refer to the [VS Code documentation](https://code.visualstudio.com/docs/c
 
 | Variable | Required | Description | Default |
 |----------|----------|--------------|---------|
-| `VNC_HOST` | ✅ | Hostname or IP of the VNC server | `localhost` |
-| `VNC_PORT` | ❌ | VNC server port | `5900` |
-| `VNC_PASSWORD` | ❌ | VNC authentication password | - |
-| `VNC_LEGACY_SHIFT_BEHAVIOR` | ❌ | Set to `true` to restore the pre-fork behavior for typing shift-modified symbols (manually holding Shift + sending the unshifted keysym). Only exists as an escape hatch — see [CHANGELOG.md](CHANGELOG.md) for why. | unset |
+| `VNC_HOST` | Y | Hostname or IP of the VNC server | `localhost` |
+| `VNC_PORT` | N | VNC server port | `5900` |
+| `VNC_PASSWORD` | N | VNC authentication password | - |
+| `VNC_LEGACY_SHIFT_BEHAVIOR` | N | Set to `true` to restore the pre-fork behavior for typing shift-modified symbols (manually holding Shift + sending the unshifted keysym). Only exists as an escape hatch — see [CHANGELOG.md](CHANGELOG.md) for why. | unset |
 
 ## 🛠️ Available Tools
 
