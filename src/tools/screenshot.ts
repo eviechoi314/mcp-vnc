@@ -1,6 +1,14 @@
 // src/tools/screenshot.ts
 import sharp from 'sharp';
+import fs from 'fs';
 import { VncConnectionManager } from '../vnc/client.js';
+
+// Debug aid: JPEG compression on the framebuffer (see below) can visibly
+// wash out color on thin, high-contrast regions like window titlebars,
+// which previously looked like a genuine theming bug rather than a lossy-
+// encoding artifact. Writing the exact bytes we send back to disk lets
+// that be checked directly instead of re-deriving it from a screenshot.
+const LAST_SCREENSHOT_PATH = '/tmp/vnc-satellite-last-screenshot.jpg';
 
 function hasCorruptionPatterns(framebuffer: Buffer, width: number, height: number): boolean {
   // Check for common corruption patterns that indicate pixel format issues
@@ -313,7 +321,13 @@ export async function captureScreenshotWithDimensions(
   }
 
   const base64Data = finalBuffer.toString('base64');
-  
+
+  try {
+    fs.writeFileSync(LAST_SCREENSHOT_PATH, finalBuffer);
+  } catch (writeError) {
+    console.error(`Could not write debug screenshot copy: ${writeError}`);
+  }
+
   const delayText = delay > 0 ? ` (after ${delay}ms delay)` : '';
   const sizeInfo = finalWidth !== width ? ` (resized from ${width}x${height})` : '';
   
