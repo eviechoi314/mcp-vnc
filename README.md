@@ -81,6 +81,15 @@ Building from source is the better option if you want to patch anything yourself
 
 Please refer to the [VS Code documentation](https://code.visualstudio.com/docs/copilot/chat/mcp-servers)
 
+### Environment Variables
+
+| Variable | Required | Description | Default |
+|----------|----------|--------------|---------|
+| `VNC_HOST` | ✅ | Hostname or IP of the VNC server | `localhost` |
+| `VNC_PORT` | ❌ | VNC server port | `5900` |
+| `VNC_PASSWORD` | ❌ | VNC authentication password | - |
+| `VNC_LEGACY_SHIFT_BEHAVIOR` | ❌ | Set to `true` to restore the pre-fork behavior for typing shift-modified symbols (manually holding Shift + sending the unshifted keysym). Only exists as an escape hatch — see [CHANGELOG.md](CHANGELOG.md) for why. | unset |
+
 ## 🛠️ Available Tools
 
 The MCP server provides the following tools for remote desktop control:

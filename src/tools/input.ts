@@ -1,7 +1,16 @@
 // src/tools/input.ts
 import { VncClient } from '@computernewb/nodejs-rfb';
 import { VncConnectionManager } from '../vnc/client.js';
-import { parseKeyInput, getKeysym, charNeedsShift } from '../vnc/keyboard.js';
+import { parseKeyInput, getKeysym, charNeedsShift, getUnshiftedChar } from '../vnc/keyboard.js';
+
+// Escape hatch for the pre-fix behavior (manually holding Shift and sending
+// the unshifted keysym) in case some VNC server out there genuinely needs a
+// simulated physical keypress rather than a resolved keysym - we haven't
+// seen one, but the upstream code shipped that way from its first commit
+// with no comment explaining why, so there's no way to be sure no such
+// server exists. Confirmed broken (dropped to unshifted chars) and fixed
+// against TigerVNC/Xtigervnc (`tigervncserver`, Debian). Unset by default.
+const useLegacyShiftBehavior = process.env.VNC_LEGACY_SHIFT_BEHAVIOR === 'true';
 
 export async function handleClick(
   vncManager: VncConnectionManager, 
@@ -186,16 +195,31 @@ async function typeCharacter(
   // *unshifted* keysym doesn't reliably combine on the server side, which
   // was producing bare unshifted characters ('&' -> '7', '~' -> '`', etc.)
   // for every shifted symbol. See handleKeyPress, which never had this
-  // problem because it always sent the real target keysym.
-  const keysym = getKeysym(char);
+  // problem because it always sent the real target keysym. Set
+  // VNC_LEGACY_SHIFT_BEHAVIOR=true to revert to the old (broken, as far as
+  // we've seen) behavior if some other server actually needs it.
   const needsShift = charNeedsShift(char);
+  const keysym = useLegacyShiftBehavior && needsShift
+    ? getKeysym(getUnshiftedChar(char))
+    : getKeysym(char);
+  const shiftKeysym = getKeysym('Shift');
 
   console.error(`Typing '${char}' with keysym 0x${keysym.toString(16)}${needsShift ? ' (shifted)' : ''}`);
 
   try {
+    if (useLegacyShiftBehavior && needsShift) {
+      vncClient.sendKeyEvent(shiftKeysym, true);
+      await new Promise(resolve => setTimeout(resolve, 10));
+    }
+
     vncClient.sendKeyEvent(keysym, true);
     await new Promise(resolve => setTimeout(resolve, keyHoldTime));
     vncClient.sendKeyEvent(keysym, false);
+
+    if (useLegacyShiftBehavior && needsShift) {
+      await new Promise(resolve => setTimeout(resolve, 10));
+      vncClient.sendKeyEvent(shiftKeysym, false);
+    }
 
     await new Promise(resolve => setTimeout(resolve, betweenKeyDelay));
   } catch (error) {
