@@ -6,6 +6,8 @@
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server that enables AI agents to remotely control Windows, Linux, macOS or anything else that can run a VNC server (don't worry, it's probably fine).
 
+> This is a fork of [hrrrsn/mcp-vnc](https://github.com/hrrrsn/mcp-vnc) with a few reliability and correctness fixes — see [CHANGELOG.md](CHANGELOG.md) for details.
+
 ![Screenshot](.github/screenshot.png)
 
 ## 🚀 Quick Start
