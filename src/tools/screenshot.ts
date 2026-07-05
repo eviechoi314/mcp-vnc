@@ -5,7 +5,7 @@ import { VncConnectionManager } from '../vnc/client.js';
 
 // Debug aid: write the exact bytes we send back to disk so what the tool
 // saw can be checked directly, without re-deriving it from a screenshot.
-const LAST_SCREENSHOT_PATH = '/tmp/vnc-satellite-last-screenshot.png';
+const LAST_SCREENSHOT_PATH = '/tmp/mcp-vnc-last-screenshot.png';
 
 function hasCorruptionPatterns(framebuffer: Buffer, width: number, height: number): boolean {
   // Check for common corruption patterns that indicate pixel format issues

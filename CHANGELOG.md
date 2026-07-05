@@ -15,4 +15,4 @@ All fixes below were found and confirmed against **TigerVNC** (`tigervncserver`/
 
 ### Added
 
-- Every screenshot now also writes its exact final PNG bytes to `/tmp/vnc-satellite-last-screenshot.png` as a local debug aid. `src/tools/screenshot.ts`
+- Every screenshot now also writes its exact final PNG bytes to `/tmp/mcp-vnc-last-screenshot.png` as a local debug aid. `src/tools/screenshot.ts`
