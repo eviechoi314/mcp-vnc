@@ -2,7 +2,6 @@
 
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D22.0.0-brightgreen)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![npm version](https://badge.fury.io/js/@hrrrsn%2Fmcp-vnc.svg)](https://badge.fury.io/js/@hrrrsn%2Fmcp-vnc)
 
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server that enables AI agents to remotely control Windows, Linux, macOS or anything else that can run a VNC server (don't worry, it's probably fine).
 
@@ -12,20 +11,24 @@ A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) s
 
 ## 🚀 Quick Start
 
-### Install from NPM
+This fork isn't published to npm — install it directly from git instead.
+
+### Install globally from git
 
 ```bash
-npm install -g @hrrrsn/mcp-vnc
+npm install -g github:eviechoi314/mcp-vnc
 ```
 
 ### Install from Source
 
 ```bash
-git clone https://github.com/hrrrsn/mcp-vnc
+git clone https://github.com/eviechoi314/mcp-vnc
 cd mcp-vnc
 npm install
 npm run build
 ```
+
+Building from source is the better option if you want to patch anything yourself — see [CHANGELOG.md](CHANGELOG.md) for what's already changed since the upstream project. After editing `src/`, run `npm run build` again; MCP clients typically don't hot-reload server code mid-session, so restart whatever client has this server configured to pick up the change.
 
 ## ⚙️ Configuration
 
@@ -38,7 +41,7 @@ npm run build
 
 2. Add the following configuration:
 
-**Using NPM Install:**
+**Installed globally from git:**
 ```json
 {
   "mcpServers": {
