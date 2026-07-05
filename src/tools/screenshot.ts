@@ -3,12 +3,9 @@ import sharp from 'sharp';
 import fs from 'fs';
 import { VncConnectionManager } from '../vnc/client.js';
 
-// Debug aid: JPEG compression on the framebuffer (see below) can visibly
-// wash out color on thin, high-contrast regions like window titlebars,
-// which previously looked like a genuine theming bug rather than a lossy-
-// encoding artifact. Writing the exact bytes we send back to disk lets
-// that be checked directly instead of re-deriving it from a screenshot.
-const LAST_SCREENSHOT_PATH = '/tmp/vnc-satellite-last-screenshot.jpg';
+// Debug aid: write the exact bytes we send back to disk so what the tool
+// saw can be checked directly, without re-deriving it from a screenshot.
+const LAST_SCREENSHOT_PATH = '/tmp/vnc-satellite-last-screenshot.png';
 
 function hasCorruptionPatterns(framebuffer: Buffer, width: number, height: number): boolean {
   // Check for common corruption patterns that indicate pixel format issues
@@ -280,8 +277,13 @@ export async function captureScreenshotWithDimensions(
     console.warn('Warning: Framebuffer may contain corrupted data patterns, but proceeding with conversion...');
   }
   
-  // Convert to compressed JPEG for smaller file size
-  // For screenshots, JPEG compression is usually acceptable
+  // Convert to PNG - lossless, unlike JPEG it won't wash out color on thin
+  // high-contrast regions (a window titlebar between a dark background and
+  // a black terminal once looked like a broken theme through this tool
+  // when it was actually just JPEG's block-based compression bleeding
+  // color at that edge - confirmed by comparing against a real screenshot
+  // taken directly on the VNC host). Screen content compresses well with
+  // PNG anyway since it's mostly flat color, not photographic noise.
   const imageBuffer = await sharp(framebuffer, {
     raw: {
       width: width,
@@ -289,23 +291,20 @@ export async function captureScreenshotWithDimensions(
       channels: 4 // RGBA
     }
   })
-  .jpeg({
-    quality: 80, // Good balance of quality vs size
-    progressive: true
-  })
+  .png()
   .toBuffer();
 
   // If still too large, resize down
   let finalBuffer = imageBuffer;
   let finalWidth = width;
   let finalHeight = height;
-  
+
   if (imageBuffer.length > 800000) { // If > 800KB
     console.error(`Image too large (${imageBuffer.length} bytes), resizing...`);
     const scaleFactor = Math.sqrt(800000 / imageBuffer.length);
     finalWidth = Math.floor(width * scaleFactor);
     finalHeight = Math.floor(height * scaleFactor);
-    
+
     finalBuffer = await sharp(framebuffer, {
       raw: {
         width: width,
@@ -314,9 +313,7 @@ export async function captureScreenshotWithDimensions(
       }
     })
     .resize(finalWidth, finalHeight)
-    .jpeg({
-      quality: 75
-    })
+    .png()
     .toBuffer();
   }
 
@@ -342,7 +339,7 @@ export async function captureScreenshotWithDimensions(
       {
         type: 'image',
         data: base64Data,
-        mimeType: 'image/jpeg'
+        mimeType: 'image/png'
       }
     ]
   };
