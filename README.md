@@ -6,6 +6,8 @@
 A [Model Context Protocol (MCP)](https://modelcontextprotocol.io/introduction) server that enables AI agents to remotely control Windows, Linux, macOS or anything else that can run a VNC server (don't worry, it's probably fine).
 
 > This is a fork of [hrrrsn/mcp-vnc](https://github.com/hrrrsn/mcp-vnc) with a few reliability and correctness fixes — see [CHANGELOG.md](CHANGELOG.md) for details.
+>
+> It also depends on [eviechoi314/nodejs-rfb](https://github.com/eviechoi314/nodejs-rfb) (a fork of the upstream `@computernewb/nodejs-rfb`, pulled in via a `github:` dependency spec in `package.json`) instead of the npm-published version, specifically to support servers that only offer RFB security type 18 (anonymous-TLS) — GNOME's `gnome-remote-desktop` VNC backend being the motivating case.
 
 ![Screenshot](.github/screenshot.png)
 
