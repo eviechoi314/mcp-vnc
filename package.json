@@ -35,7 +35,7 @@
   "homepage": "https://github.com/eviechoi314/mcp-vnc",
   "license": "MIT",
   "dependencies": {
-    "@computernewb/nodejs-rfb": "^0.4.2",
+    "@computernewb/nodejs-rfb": "github:eviechoi314/nodejs-rfb#main",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "sharp": "^0.34.0"
   },

@@ -62,15 +62,15 @@ class VncMcpTester {
       this.serverProcess.stderr?.on('data', (data) => {
         const output = data.toString();
         console.log('📡 Server:', output.trim());
-        
-        if (output.includes('Connected to VNC server')) {
+
+        // The server connects to VNC lazily on the first tool call, not at
+        // startup - "Connected to VNC server" never appears before then. Just
+        // wait for the process-started log line; actual connection success
+        // is verified by the first real tool call's response instead.
+        if (output.includes('started!')) {
           clearTimeout(initTimeout);
-          console.log('✅ VNC Connection Confirmed by server log.');
+          console.log('✅ Server process started.');
           resolve();
-        } else if (output.includes('VNC MCP Server running') && !output.includes('VNC connection error') && !output.includes('Connection timeout')) {
-          // Server is up, but VNC not yet connected. Don't resolve yet.
-          // The initTimeout will handle cases where VNC never connects.
-          console.log('⏳ VNC MCP Server is running, waiting for VNC connection...');
         } else if (output.includes('VNC connection error') || output.includes('Connection timeout')) {
             clearTimeout(initTimeout);
             reject(new Error('VNC connection failed during server startup: ' + output.trim()));
@@ -199,7 +199,11 @@ class VncMcpTester {
       timeout = setTimeout(() => {
         this.serverProcess!.stdout!.off('data', handleData);
         reject(new Error('Request timeout'));
-      }, 5000);
+        // Each call opens a fresh VNC connection (connect+auth+initial
+        // framebuffer) before doing anything else, and text typing sends one
+        // keystroke at a time - long strings plus connection overhead can
+        // exceed 5s even though the server completes the action correctly.
+      }, 15000);
 
       this.serverProcess.stdin!.write(JSON.stringify(request) + '\n');
     });
